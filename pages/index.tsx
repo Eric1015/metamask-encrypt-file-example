@@ -1,9 +1,52 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import type { NextPage } from 'next';
+import Head from 'next/head';
+import styles from '../styles/Home.module.css';
+import { Button, TextField } from '@mui/material';
+import Web3ContextProvider, {
+  IWeb3Context,
+  useWeb3Context,
+} from '../app/contexts/web3Context';
+import React from 'react';
+import { encrypt } from '@metamask/eth-sig-util';
 
 const Home: NextPage = () => {
+  const {
+    connectWallet,
+    getPublicKey,
+    decryptMessage,
+    state: { isAuthenticated },
+  } = useWeb3Context() as IWeb3Context;
+
+  const [publicKey, setPublicKey] = React.useState<string | null>(null);
+  const [message, setMessage] = React.useState<string>('');
+  const [encryptedMessage, setEncryptedMessage] = React.useState<string>('');
+  const [decryptedMessage, setDecryptedMessage] = React.useState<string>('');
+
+  const onConnectWalletClicked = async () => {
+    await connectWallet();
+  };
+
+  const onGetPublicKeyClicked = async () => {
+    const publicKey = await getPublicKey();
+    setPublicKey(publicKey);
+  };
+
+  const onMessageEncryptClicked = async () => {
+    if (publicKey == null) return;
+    const encryptedMessage = await encrypt({
+      publicKey,
+      data: message,
+      version: 'x25519-xsalsa20-poly1305',
+    });
+    setEncryptedMessage(encryptedMessage.ciphertext);
+  };
+
+  const onDecryptMessageClicked = async () => {
+    if (encryptedMessage == null) return;
+    const decryptedMessage = await decryptMessage(encryptedMessage);
+    setDecryptedMessage(decryptedMessage || '');
+  };
+
   return (
     <div className={styles.container}>
       <Head>
@@ -13,60 +56,27 @@ const Home: NextPage = () => {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+        <div>
+          {isAuthenticated ? (
+            <div>
+              <Button onClick={onGetPublicKeyClicked}>Get Public Key</Button>
+              <p>Public Key: {publicKey}</p>
+              <TextField
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Type message to be encrypted"
+              ></TextField>
+              <Button onClick={onMessageEncryptClicked}>Encrypt Message</Button>
+              <p>Encrypted Message: {encryptedMessage}</p>
+              <Button onClick={onDecryptMessageClicked}>Decrypt Message</Button>
+              <p>Decrypted Message: {decryptedMessage}</p>
+            </div>
+          ) : (
+            <Button onClick={onConnectWalletClicked}>Connect Wallet</Button>
+          )}
         </div>
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
