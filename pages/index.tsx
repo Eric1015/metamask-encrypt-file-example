@@ -38,7 +38,11 @@ const Home: NextPage = () => {
       data: message,
       version: 'x25519-xsalsa20-poly1305',
     });
-    setEncryptedMessage(encryptedMessage.ciphertext);
+    setEncryptedMessage(
+      `0x${Buffer.from(JSON.stringify(encryptedMessage), 'utf8').toString(
+        'hex'
+      )}`
+    );
   };
 
   const onDecryptMessageClicked = async () => {
@@ -66,7 +70,9 @@ const Home: NextPage = () => {
                 placeholder="Type message to be encrypted"
               ></TextField>
               <Button onClick={onMessageEncryptClicked}>Encrypt Message</Button>
-              <p>Encrypted Message: {encryptedMessage}</p>
+              <p style={{ width: '500px', overflowWrap: 'break-word' }}>
+                Encrypted Message: {encryptedMessage}
+              </p>
               <Button onClick={onDecryptMessageClicked}>Decrypt Message</Button>
               <p>Decrypted Message: {decryptedMessage}</p>
             </div>
